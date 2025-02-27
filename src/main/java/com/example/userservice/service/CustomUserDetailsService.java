@@ -20,10 +20,15 @@ public class CustomUserDetailsService implements UserDetailsService {
         AppUser user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+        System.out.println("✅ Loaded user: " + user.getEmail());
+        System.out.println("✅ Role: " + user.getRole().name());
+
         return User.builder()
                 .username(user.getEmail())
                 .password(user.getPassword())
-                .roles(user.getRole())
+                .roles(user.getRole().name()) // Ensure this is correctly set
                 .build();
     }
+
+
 }

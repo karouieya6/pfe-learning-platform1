@@ -1,10 +1,10 @@
 package com.example.userservice.controller;
 
-import com.example.userservice.model.AppUser;
+import com.example.userservice.dto.LoginRequest;
+import com.example.userservice.dto.RegisterRequest;
 import com.example.userservice.service.UserService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -12,22 +12,15 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService authService;
+    private final UserService userService;
 
     @PostMapping("/register")
-    public String register(@RequestBody AppUser user) {
-        return authService.register(user);
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(userService.register(request));
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
-        return authService.login(request.getEmail(), request.getPassword());
+    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(userService.login(request));
     }
-}
-
-@Getter
-@Setter
-class LoginRequest {
-    private String email;
-    private String password;
 }
