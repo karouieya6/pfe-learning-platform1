@@ -58,4 +58,14 @@ public class JwtUtil {
     private boolean isTokenExpired(String token) {
         return extractAllClaims(token).getExpiration().before(new Date());
     }
+    public String generateResetToken(AppUser user) {
+        return Jwts.builder()
+                .setSubject(user.getEmail())  // Email as subject
+                .claim("reset", true) // Mark this as a reset token
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + (15 * 60 * 1000))) // 15 minutes expiry
+                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .compact();
+    }
+
 }

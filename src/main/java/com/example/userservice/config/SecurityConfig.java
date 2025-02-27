@@ -27,10 +27,12 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable()) // Disable CSRF for API requests
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/forgot-password").permitAll()  // ✅ Allow forgot password
+                        .requestMatchers(HttpMethod.POST, "/auth/reset-password").permitAll()   // ✅ Allow reset password
                         .requestMatchers(HttpMethod.GET, "/user/profile", "/user/change-password").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/user/all", "/user/{id}").hasAuthority("ADMIN")  // ✅ Fix roles
-                        .requestMatchers(HttpMethod.PUT, "/user/update/{id}").hasAuthority("ADMIN")       // ✅ Fix roles
-                        .requestMatchers(HttpMethod.DELETE, "/user/delete/{id}").hasAuthority("ADMIN")    // ✅ Fix roles
+                        .requestMatchers(HttpMethod.GET, "/user/all", "/user/{id}").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/user/update/{id}").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/user/delete/{id}").hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
