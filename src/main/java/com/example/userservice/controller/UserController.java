@@ -54,10 +54,6 @@ public class UserController {
                 "role", user.getRole().name()
         ));
     }
-
-
-
-
     /**
      * ✅ Get All Users
      * 🔹 Admins only

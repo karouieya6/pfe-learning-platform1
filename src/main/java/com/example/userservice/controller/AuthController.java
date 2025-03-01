@@ -11,7 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
+import com.example.userservice.service.EmailService;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,11 +21,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
     private final Map<String, String> resetTokens = new HashMap<>();
-
     private final PasswordEncoder passwordEncoder;
     private final UserService userService;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
         return ResponseEntity.ok(userService.register(request));
@@ -34,6 +35,16 @@ public class AuthController {
     public ResponseEntity<String> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(userService.login(request));
     }
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestHeader("Authorization") String token) {
+        if (token.startsWith("Bearer ")) {
+            token = token.substring(7);  // Remove "Bearer " prefix
+        }
+
+        userService.logout(token);
+        return ResponseEntity.ok("✅ Logout successful!");
+    }
+
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email");
@@ -43,16 +54,22 @@ public class AuthController {
 
         // Generate Reset Token (Valid for 15 minutes)
         String resetToken = jwtUtil.generateResetToken(user);
+        resetTokens.put(resetToken, email); // Store the token temporarily
 
-        // Store token temporarily (simulate database storage)
-        resetTokens.put(resetToken, email);
-
-        // Simulate Email Sending (Show link in console for testing)
+        // Generate Reset Link
         String resetLink = "http://localhost:8081/auth/reset-password?token=" + resetToken;
-        System.out.println("🔗 Password Reset Link: " + resetLink);
 
-        return ResponseEntity.ok("✅ Password reset link generated! (Check console)");
+        // Send Email with Reset Link
+        String emailBody = "<h3>Password Reset Request</h3>"
+                + "<p>Click the link below to reset your password:</p>"
+                + "<a href='" + resetLink + "'>Reset Password</a>";
+
+        emailService.sendEmail(email, "Password Reset Request", emailBody);
+
+        return ResponseEntity.ok("✅ Password reset link sent to your email!");
     }
+
+
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> request) {
         String token = request.get("token");
@@ -75,6 +92,5 @@ public class AuthController {
 
         return ResponseEntity.ok("✅ Password updated successfully!");
     }
-
 
 }

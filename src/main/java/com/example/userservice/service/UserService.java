@@ -20,6 +20,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;  // ✅ Use the new service
 
     @Transactional
     public String register(RegisterRequest request) {
@@ -33,7 +34,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         try {
-            user.setRole(Role.valueOf(request.getRole()));  // ✅ Convert String to Enum
+            user.setRole(Role.valueOf(request.getRole()));
         } catch (IllegalArgumentException e) {
             throw new RuntimeException("❌ Invalid role provided!");
         }
@@ -50,30 +51,21 @@ public class UserService {
             throw new RuntimeException("Invalid credentials");
         }
 
-        return jwtUtil.generateToken(user); // Use the modified generateToken()
+        return jwtUtil.generateToken(user);
     }
 
-    @Transactional
-    public void changePassword(String email, String oldPassword, String newPassword) {
-        AppUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("❌ User not found!"));
-
-        // Verify the old password
-        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
-            throw new RuntimeException("❌ Incorrect old password!");
-        }
-
-        // Update with the new password
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
+    // ✅ Use TokenBlacklistService
+    public void logout(String token) {
+        tokenBlacklistService.revokeToken(token);
     }
+
     public List<AppUser> getAllUsers() {
         return userRepository.findAll();
     }
 
     public AppUser getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("\u274C User not found!"));
+                .orElseThrow(() -> new RuntimeException("❌ User not found!"));
     }
 
     public AppUser updateUser(Long id, AppUser updatedUser) {
@@ -86,10 +78,8 @@ public class UserService {
 
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new RuntimeException("\u274C User not found!");
+            throw new RuntimeException("❌ User not found!");
         }
         userRepository.deleteById(id);
     }
-
-
 }

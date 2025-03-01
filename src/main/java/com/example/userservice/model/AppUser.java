@@ -1,12 +1,13 @@
 package com.example.userservice.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
+import java.time.LocalDateTime;
 
+@Getter
+@Setter
 @Entity
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "users")
 public class AppUser {
 
@@ -25,4 +26,6 @@ public class AppUser {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

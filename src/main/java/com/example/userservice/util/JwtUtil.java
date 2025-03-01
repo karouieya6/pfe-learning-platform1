@@ -1,11 +1,15 @@
 package com.example.userservice.util;
 
-import com.example.userservice.model.AppUser;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import com.example.userservice.model.AppUser;
 
+import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 @Component
@@ -15,57 +19,62 @@ public class JwtUtil {
     private String secretKey;
 
     @Value("${jwt.expiration}")
-    private long expirationTime;
+    private long expirationTime; // Expiration time in milliseconds
 
-    public String generateToken(AppUser user) {
-        return Jwts.builder()
-                .setSubject(user.getEmail())  // Keep email in "sub"
-                .claim("role", user.getRole().name()) // Store role (without "ROLE_" prefix)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expirationTime)) // Token expiry
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
+    private Key getSigningKey() {
+        return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
-
-
-
-
 
     public String extractUsername(String token) {
-        String email = extractClaim(token, Claims::getSubject);
-        System.out.println("📌 Extracted email from JWT: " + email);
-        return email;
+        return extractClaim(token, Claims::getSubject);
     }
 
-
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
     public Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(secretKey)
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
 
-    public boolean isTokenValid(String token, String userEmail) {
-        final String username = extractUsername(token);
-        return (username.equals(userEmail) && !isTokenExpired(token));
+    public boolean isTokenValid(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            return !claims.getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return false; // Token is expired
+        } catch (JwtException e) {
+            return false; // Other JWT validation issues
+        }
     }
 
-    private boolean isTokenExpired(String token) {
-        return extractAllClaims(token).getExpiration().before(new Date());
+    // ✅ Corrected generateToken method to accept AppUser
+    public String generateToken(AppUser user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        return generateToken(user.getEmail(), claims);
     }
-    public String generateResetToken(AppUser user) {
+
+    // ✅ Fixed generateToken method with correct parameters
+    public String generateToken(String username, Map<String, Object> extraClaims) {
         return Jwts.builder()
-                .setSubject(user.getEmail())  // Email as subject
-                .claim("reset", true) // Mark this as a reset token
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + (15 * 60 * 1000))) // 15 minutes expiry
-                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .setClaims(extraClaims)
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime)) // Uses application.properties value
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    // ✅ New method to generate a reset token for password reset
+    public String generateResetToken(AppUser user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("reset", true);
+        return generateToken(user.getEmail(), claims);
+    }
 }
