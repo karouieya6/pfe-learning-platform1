@@ -59,9 +59,9 @@ public class UserService {
         tokenBlacklistService.revokeToken(token);
     }
 
-    public List<AppUser> getAllUsers() {
-        return userRepository.findAll();
-    }
+    public List<AppUser> getAllActiveUsers() {
+        return userRepository.findByActiveTrue();}
+
 
     public AppUser getUserById(Long id) {
         return userRepository.findById(id)
@@ -76,10 +76,40 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("❌ User not found!");
+    @Transactional
+    public void deleteUser(Long userId, String adminEmail) {
+        AppUser adminUser = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        // Only allow admin to delete users
+        if (!adminUser.getRole().equals(Role.ADMIN)) {
+            throw new RuntimeException("Access Denied: Admin role required");
         }
-        userRepository.deleteById(id);
+
+        AppUser userToDelete = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Delete user from database
+        userRepository.delete(userToDelete);
     }
+
+    @Transactional
+    public void deactivateUser(Long userId, String adminEmail) {
+        AppUser adminUser = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        // Only allow admin to deactivate users
+        if (!adminUser.getRole().equals(Role.ADMIN)) {
+            throw new RuntimeException("Access Denied: Admin role required");
+        }
+
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Mark user as inactive
+        user.setActive(false);
+        userRepository.save(user); // Save the updated user
+    }
+
+
 }

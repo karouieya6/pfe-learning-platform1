@@ -95,25 +95,8 @@ public class UserController {
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id, Authentication authentication) {
         String adminEmail = authentication.getName();
-        System.out.println("✅ Admin attempting delete: " + adminEmail);
-
-        AppUser adminUser = userRepository.findByEmail(adminEmail)
-                .orElseThrow(() -> new RuntimeException("Admin not found"));
-
-        System.out.println("✅ Admin found: " + adminUser.getEmail() + " with role: " + adminUser.getRole());
-
-        if (!adminUser.getRole().equals(Role.ADMIN)) {
-            System.out.println("❌ Access Denied: Not an Admin");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access Denied: Admin Role Required!");
-        }
-
-        AppUser userToDelete = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        System.out.println("✅ Deleting user: " + userToDelete.getEmail());
-
-        userRepository.delete(userToDelete);
-        return ResponseEntity.ok("✅ User deleted successfully!");
+        userService.deleteUser(id, adminEmail);
+        return ResponseEntity.ok("User deleted successfully!");
     }
 
 
@@ -181,6 +164,14 @@ public class UserController {
 
         return ResponseEntity.ok("✅ Password updated successfully!");
     }
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/deactivate/{id}")
+    public ResponseEntity<String> deactivateUser(@PathVariable Long id, Authentication authentication) {
+        String adminEmail = authentication.getName();
+        userService.deactivateUser(id, adminEmail);
+        return ResponseEntity.ok("User deactivated successfully!");
+    }
+
 
 
 

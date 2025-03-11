@@ -28,4 +28,6 @@ public class AppUser {
     private Role role;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(nullable = false)
+    private Boolean active = true;
 }
