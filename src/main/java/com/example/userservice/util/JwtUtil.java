@@ -3,6 +3,7 @@ package com.example.userservice.util;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import com.example.userservice.model.AppUser;
 
@@ -52,13 +53,16 @@ public class JwtUtil {
             return false; // Other JWT validation issues
         }
     }
-
-    // ✅ Corrected generateToken method to accept AppUser
-    public String generateToken(AppUser user) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole().name());
-        return generateToken(user.getEmail(), claims);
+    public String generateToken(UserDetails user) {
+        return Jwts.builder()
+                .setSubject(user.getUsername())
+                .claim("role", user.getAuthorities().iterator().next().getAuthority())
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
+
 
     // ✅ Fixed generateToken method with correct parameters
     public String generateToken(String username, Map<String, Object> extraClaims) {

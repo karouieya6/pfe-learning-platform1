@@ -32,6 +32,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getServletPath();
+        if (path.equals("/auth/login") || path.equals("/auth/register")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+
+        // Your existing JWT logic below 👇
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
@@ -43,7 +51,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         jwt = authHeader.substring(7);
 
-        // ✅ Check if token is revoked
         if (tokenBlacklistService.isTokenRevoked(jwt)) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "❌ Token is revoked");
             return;
