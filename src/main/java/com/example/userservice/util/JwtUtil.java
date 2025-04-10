@@ -10,6 +10,7 @@ import com.example.userservice.model.AppUser;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -53,15 +54,16 @@ public class JwtUtil {
             return false; // Other JWT validation issues
         }
     }
-    public String generateToken(UserDetails user) {
+    public String generateToken(AppUser user) {
         return Jwts.builder()
-                .setSubject(user.getUsername())
-                .claim("role", user.getAuthorities().iterator().next().getAuthority())
+                .setSubject(user.getEmail())
+                .claim("roles", List.of(user.getRole().name())) // ✅ Correct format
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
 
     // ✅ Fixed generateToken method with correct parameters
